@@ -1,3 +1,3 @@
 # PL-UW
 Programming Language on Coursera
-repository for Part A
+repository for Part A, B and C
