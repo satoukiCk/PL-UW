@@ -53,6 +53,7 @@
                (int (+ (int-num v1) 
                        (int-num v2)))
                (error "MUPL addition applied to non-number")))]
+        
         [(int? e) e]
         [(closure? e) e]
         [(aunit? e) e]
@@ -72,13 +73,18 @@
                   [newenv (cons (cons (mlet-var e) v) env)])
            (eval-under-env (mlet-body e) newenv))]
         [(call? e)
-         (letrec ([arg (eval-under-env (call-actual e) env)]
-               [clos (eval-under-env (call-funexp e) env)]
-               [funbody (fun-body (closure-fun clos))]
-               [inval (fun-formal (closure-fun clos))])
-           (if (closure? clos)
-               (eval-under-env (fun-body (closure-fun clos)) (cons (cons inval arg) (closure-env clos)))
-               (error "MUPL can't call a function that isn't a closure")))]
+         (let ([v1 (eval-under-env (call-funexp e) env)]
+               [v2 (eval-under-env (call-actual e) env)]) 
+           (if (closure? v1)
+               (letrec ([cl-fun (closure-fun v1)] 
+                        [cl-en (closure-env v1)] 
+                        [env1 (if (fun-nameopt cl-fun)
+                                  (cons (cons (fun-nameopt cl-fun) v1) cl-en)                     
+                                  cl-en)]
+                        [env2 (cons (cons (fun-formal cl-fun)                                          
+                                          v2) env1)])
+                 (eval-under-env (fun-body cl-fun) env2))
+               (error "MUPL call applied to non-closure")))]
         [(apair? e)
          (let ([v1 (eval-under-env (apair-e1 e) env)]
                [v2 (eval-under-env (apair-e2 e) env)])
@@ -107,7 +113,9 @@
   (eval-under-env e null))
         
 ;; Problem 3
-(define (ifaunit e1 e2 e3) (if (aunit? e1) e2 e3))
+(define (ifaunit e1 e2 e3)
+  (ifgreater (isaunit e1) (int 0) e2 e3))
+
 
 (define (mlet* lstlst e2)
   (if (null? lstlst)
